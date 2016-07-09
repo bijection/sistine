@@ -1,9 +1,14 @@
 import cv2
 import numpy as np
 
-def main():
-    cap = cv2.VideoCapture(0)
+# lower = np.array([0, 0, 0], dtype = "uint8")
+# upper = np.array([45, 59, 50], dtype = "uint8")
 
+def main():
+    cv2.ocl.setUseOpenCL(False)
+    cap = cv2.VideoCapture('cv/fingers/fingers.mov')
+
+    # detector = cv2.SimpleBlobDetector()
     # main loop
     while True:
         # frame by frame capture
@@ -11,26 +16,30 @@ def main():
         # this way works fine for us
         ret, frame = cap.read()
 
-        # display
-        # cv2.imshow('frame', frame)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB)
-        # frame[:,:,0] = 0
-        # frame[:,:,1] = 0
-        # frame[:,:,2] = 255.0 * (frame[:,:,2] > 100)
 
-        x,y = cv2.minMaxLoc(frame[:,:,2])[2]
-        frame = cv2.cvtColor(frame, cv2.COLOR_LAB2RGB)
-        frame = cv2.rectangle(frame, (x-100,y-100), (x+100,y+100), 255)
+        frame = cv2.inRange(frame[:,:,2], 90, 110)
 
+        # frame = cv2.rectangle(frame, (x-100,y-100), (x+100,y+100), 255)
+        _, cnts, _ = cv2.findContours(frame.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # l, a, b = cv2.split(frame)
-        # l = cv2.threshold(l, 100)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_LAB2RGB)
+        byarea = []
+        for c in cnts:
+            area = cv2.contourArea(c)
+            byarea.append((area, c))
+        byarea.sort(key=lambda i: i[0])
+        frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        if len(byarea) > 2:
+            for i in byarea[-2:]:
+                c = i[1]
+                hull = cv2.convexHull(c)
+                cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
+                cv2.drawContours(frame, [hull], -1, (0, 0, 255), 2)
 
-        cv2.imshow('frame', frame)
+            cv2.imshow('frame', frame)
 
-        if cv2.waitKey(1) & 0xff == ord('q'):
-            break
+            if cv2.waitKey(1) & 0xff == ord('q'):
+                break
 
     # release everything
     cap.release()
