@@ -12,7 +12,17 @@ def main():
         ret, frame = cap.read()
 
         # display
+        # cv2.imshow('frame', frame)
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB)
+        frame[:,:,0] = 0
+        frame[:,:,1] = 0
+        frame[:,:,2] = 255.0 * (frame[:,:,2] > 100)
+        # l, a, b = cv2.split(frame)
+        # l = cv2.threshold(l, 100)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_LAB2RGB)
+
         cv2.imshow('frame', frame)
+
         if cv2.waitKey(1) & 0xff == ord('q'):
             break
 
