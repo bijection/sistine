@@ -153,6 +153,22 @@ def find(segmented_image, debugframe=None, options={}):
     return None, None, None
 
 
+# points are in the format [(x, y)]
+def findTransform(webcam_points, screen_points):
+    webcam_points = np.array(webcam_points)
+    screen_points = np.array(screen_points)
+    hom, mask = cv2.findHomography(webcam_points, screen_points, method=cv2.RANSAC)
+    return hom
+
+
+# returns the transformed (x, y) as a pair
+def applyTransform(x, y, homography):
+    inp = np.array([[[x, y]]], dtype=np.float)
+    res = cv2.perspectiveTransform(inp, homography)
+    x_, y_ = res[0,0]
+    return int(round(x_)), int(round(y_))
+
+
 def main():
     cv2.ocl.setUseOpenCL(False) # some stuff dies if you don't do this
 
