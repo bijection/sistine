@@ -137,7 +137,7 @@ def main():
         if options['orig']:
             drawframe = frame
         else:
-            drawframe  = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            drawframe  = cv2.cvtColor(segmented, cv2.COLOR_GRAY2BGR)
 
         # debugframe can be omitted if not debugging
         x, y, touch = find(segmented, debugframe=drawframe, options=options)
