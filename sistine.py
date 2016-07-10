@@ -259,7 +259,8 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
         webcam_points = [i for s in webcam_points for i in s]
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
-        pickle.dump(calib, open('previous.pickle','w+'))
+        if not ('nocalib' in sys.argv):
+            pickle.dump(calib, open('previous.pickle','w+'))
 
     if not options['nocalib']:
         for i, j in calib['orp']:
