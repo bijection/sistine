@@ -8,9 +8,6 @@ import simulate
 COMP_DIMENSION_X = 1440
 COMP_DIMENSION_Y = 900
 
-def opencv2system(pt):
-    return (pt[0] + WINDOW_SHIFT_X, pt[1] + WINDOW_SHIFT_Y)
-
 # parameters
 MIDPOINT_DETECTION_SKIP_ZONE = 0.08
 MIDPOINT_DETECTION_IGNORE_ZONE = 0.1
@@ -53,6 +50,8 @@ def segmentImage(image):
     image = cv2.inRange(image[:,:,2], FINGER_COLOR_LOW, FINGER_COLOR_HIGH)
     return image
 
+def opencv2system(ox, oy):
+    return (ox + WINDOW_SHIFT_X, oy + WINDOW_SHIFT_Y)
 
 def findTouchPoint(contour, x, y, w, h):
     buf = np.zeros((h, w))
@@ -243,6 +242,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
         state['last_drawn'] = None # a pair (x, y)
         state['initialized'] = True
         state['md'] = False
+        state['usemouse'] = False
 
     x, y, touch = find(segmented, debugframe=drawframe, options=options)
     state['last'].append((x, y, touch))
@@ -276,14 +276,19 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
             y_ = int(y_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][1])
         state['last_drawn'] = (x_, y_)
         cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
-        simulate.mousemove(x_,y_)
+        shouldMouse = True #state['usemouse']
+        mx, my = opencv2system(x_,y_)
+        if shouldMouse:
+            simulate.mousemove(mx, my)
         if touch:
-            if not state['md']:
-                simulate.mousedown(x_,y_)
+            if not state['md'] and shouldMouse:
+                simulate.mousedown(mx, my)
+                state['md'] = True
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, YELLOW, -1)
         else:
-            if state['md']:
-                simulate.mouseup(x_,y_)
+            if state['md'] and shouldMouse:
+                simulate.mouseup(mx, my)
+                state['md'] = False
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
         cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, GREEN, -1)
     else:
@@ -319,7 +324,7 @@ def main():
     }
 
     if 'nocalib' in sys.argv:
-        with open('actually_good_calib.pickle') as f:
+        with open('good_calib.pickle') as f:
             calib = pickle.load(f)
         stages = [mainLoop]
     else:
@@ -349,8 +354,11 @@ def main():
     # main loop
     state = {}
     while True:
-        if cv2.waitKey(1) & 0xff == ord('q'):
+        key = cv2.waitKey(1)
+        if key & 0xff == ord('q'):
             break
+        elif key & 0xff == ord('k'):
+            state['usemouse'] = False
 
         # frame by frame capture
         # I think there's a callback-based way to do this as well, but I think
@@ -380,8 +388,8 @@ def main():
     # release everything
     cap.release()
     cv2.destroyAllWindows()
-    if state['md']:
-        simulate.mouseup(640,0) # nonsketch location to mouseup
+    #if state['md']:
+    #    simulate.mouseup(mx, my)
 
 if __name__ == '__main__':
     main()
