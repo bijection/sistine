@@ -2,10 +2,14 @@ import cv2
 import numpy as np
 import sys, pdb
 import pickle
+import simulate
 
 # dont change parameters
 COMP_DIMENSION_X = 1440
 COMP_DIMENSION_Y = 900
+
+def opencv2system(pt):
+    return (pt[0] + WINDOW_SHIFT_X, pt[1] + WINDOW_SHIFT_Y)
 
 # parameters
 MIDPOINT_DETECTION_SKIP_ZONE = 0.08
@@ -238,6 +242,8 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
         state['last'] = [nnn, nnn, nnn] # last 3 results
         state['last_drawn'] = None # a pair (x, y)
         state['initialized'] = True
+        state['md'] = False
+
     x, y, touch = find(segmented, debugframe=drawframe, options=options)
     state['last'].append((x, y, touch))
     state['last'].pop(0)
@@ -270,9 +276,14 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
             y_ = int(y_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][1])
         state['last_drawn'] = (x_, y_)
         cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
+        simulate.mousemove(x_,y_)
         if touch:
+            if not state['md']:
+                simulate.mousedown(x_,y_)
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, YELLOW, -1)
         else:
+            if state['md']:
+                simulate.mouseup(x_,y_)
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
         cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, GREEN, -1)
     else:
@@ -369,7 +380,8 @@ def main():
     # release everything
     cap.release()
     cv2.destroyAllWindows()
-
+    if state['md']:
+        simulate.mouseup(640,0) # nonsketch location to mouseup
 
 if __name__ == '__main__':
     main()
