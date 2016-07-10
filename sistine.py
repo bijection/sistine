@@ -246,10 +246,10 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         calib['hom'] = hom
         import 
 
-    for x, y in calib['orp']:
-        x_, y_ = applyTransform(x, y, calib['hom'])
-        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, RED, -1)
-        cv2.line(drawframe, (x, y), (x_, y_), RED, LINE_WIDTH)
+    for i, j in calib['orp']:
+        i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
+        cv2.circle(drawframe, (i, j), CIRCLE_RADIUS, RED, -1)
+        cv2.line(drawframe, (i, j), (i_, j_), RED, LINE_WIDTH)
 
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
