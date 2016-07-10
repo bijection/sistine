@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
-import sys
+import sys, pdb
+
+# dont change parameters
+COMP_DIMENSION_X = 1440
+COMP_DIMENSION_Y = 900
 
 # parameters
 MIDPOINT_DETECTION_DEAD_ZONE = 0.1
@@ -9,12 +13,26 @@ FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
 REFLECTION_MIN_RATIO = 0.1
 
+CAPTURE_DIMENSION_X = 1280
+CAPTURE_DIMENSION_Y = 720
+
+WINDOW_SHIFT_X = (COMP_DIMENSION_X - CAPTURE_DIMENSION_X)/2
+WINDOW_SHIFT_Y = (COMP_DIMENSION_Y - CAPTURE_DIMENSION_Y)/2
+
+CALIBRATION_X_COORDS = [.3,.5,.7]
+CALIBRATION_Y_COORDS = [.5,.7,.9]
+
+VERT_STAGE_SETUP_TIME = 2
+VERT_STAGE_TIME = 4
+
 # unimportant parameters
 LINE_WIDTH = 2
 CIRCLE_RADIUS = 6
 BLUE = (255, 0, 255)
 GREEN = (0, 255, 0)
 RED = (0, 0, 255)
+CALIB_CIRCLE_RADIUS = 10
+
 
 
 def segmentImage(image):
@@ -104,9 +122,74 @@ def find(segmented_image, debugframe=None, options={}):
                     return touch_x, touch_y, True
     return None, None, None
 
+def opencv2system_coords(pt):
+    return (pt[0] + WINDOW_SHIFT_X, pt[1] + WINDOW_SHIFT_Y)
+
+def system2opencv_coords(pt):
+    return (pt[0] - WINDOW_SHIFT_X, pt[1] - WINDOW_SHIFT_Y)
+
+def calibration(ind):
+    rows,cols,_ = (720, 1280, 3) # frame.shape
+    col = cols/2
+
+    pts = []
+    for x_frac in CALIBRATION_X_COORDS:
+        for y_frac in CALIBRATION_Y_COORDS:
+            x = int(x_frac * CAPTURE_DIMENSION_X)
+            y = int(y_frac * CAPTURE_DIMENSION_Y)
+            pt = (x,y)
+            pts.append(pt)
+
+    pt = pts[ind]
+    systemPt = opencv2system_coords(pt)
+    x_calib, y_calib = pt
+
+    def _calibration(segmented, debugframe, options, ticks, drawframe, calib):
+        if ticks > VERT_STAGE_SETUP_TIME:
+            cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, RED, -1)
+            x, y, touch = find(segmented, debugframe=drawframe, options=options)
+            if touch is not None:
+                cv2.circle(drawframe, (x,y), CIRCLE_RADIUS, BLUE, -1)
+                calibrationPts = calib['calibrationPts']
+                sum_ = calibrationPts[ind]
+                calib['numPts'] += 1.
+                calibrationPts[ind] = (sum_[0] + x, sum_[1] + y)
+
+        else:
+            cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, GREEN, -1)
+        
+        if ticks > VERT_STAGE_TIME:
+            # cleanup
+            sumPt = calib['calibrationPts'][ind]
+            numPts = calib['numPts']
+            if numPts == 0:
+                print "No points recorded!"
+                numPts = 1
+            calib['calibrationPts'][ind] = (sumPt[0]/numPts, sumPt[1]/numPts)
+            calib['numPts'] = 0.
+            calib['realPts'][ind] = systemPt
+            return False
+        return True
+
+    return _calibration
+
+def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
+    x, y, touch = find(segmented, debugframe=drawframe, options=options)
+    if touch is not None:
+        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
 
 def main():
     cv2.ocl.setUseOpenCL(False) # some stuff dies if you don't do this
+
+    initialStageTicks = cv2.getTickCount()
+    calib = {
+        "numPts":0.,
+        "calibrationPts":[(0,0)] * 9,
+        "realPts":[(0,0)] * 9
+    }
+
+    stages = [calibration(i) for i in range(len(CALIBRATION_Y_COORDS) * len(CALIBRATION_X_COORDS))] + [mainLoop]
+    currStage = stages.pop(0)
 
     # settings
     options = {}
@@ -118,6 +201,7 @@ def main():
     options['nobox'] = 'nobox' in sys.argv
     options['nocontour'] = 'nocontour' in sys.argv
 
+    debugframe = None
     # main loop
     while True:
         if cv2.waitKey(1) & 0xff == ord('q'):
@@ -130,22 +214,25 @@ def main():
         if frame is None:
             break
         frame = cv2.flip(frame, 1) # unmirror left to right
-
         segmented = segmentImage(frame)
 
         # only matters for debugging
         if options['orig']:
             drawframe = frame
         else:
-            drawframe  = cv2.cvtColor(segmented, cv2.COLOR_GRAY2BGR)
+            drawframe = cv2.cvtColor(segmented, cv2.COLOR_GRAY2BGR)
 
-        # debugframe can be omitted if not debugging
-        x, y, touch = find(segmented, debugframe=drawframe, options=options)
-
-        # debugging stuff
-        if touch is not None:
-            cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
+        ticks = (cv2.getTickCount() - initialStageTicks)/cv2.getTickFrequency()
+        if not currStage(segmented, debugframe, options, ticks, drawframe, calib):
+            currStage = stages.pop(0)
+            initialStageTicks = cv2.getTickCount()
+            if currStage == mainLoop:
+                pdb.set_trace()
+        
+        # COMP / CAP
+        
         cv2.imshow('drawframe', drawframe)
+        cv2.moveWindow('drawframe', WINDOW_SHIFT_X, WINDOW_SHIFT_Y)
 
     # release everything
     cap.release()

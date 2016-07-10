@@ -1,4 +1,8 @@
 import cv2, numpy as np, pdb
+
+DIMENSION_X = 1440 * 2
+DIMENSION_Y = 900 * 2
+
 cv2.ocl.setUseOpenCL(False)
 cap = cv2.VideoCapture(0)
 
