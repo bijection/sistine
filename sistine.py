@@ -50,7 +50,52 @@ def findTouchPoint(contour, x, y, w, h):
     cv2.circle(buf, (thinx, thiny), CIRCLE_RADIUS, BLUE, -1)
     if thiny == topstart or thiny == bottomstop:
         return None, None
-    return thiny + y, thinx + x
+    return thinx + x, thiny + y
+
+
+def findHoverPoint(
+        contour_big,
+        x1,
+        y1,
+        w1,
+        h1,
+        contour_small,
+        x2,
+        y2,
+        w2,
+        h2):
+    # this can probably be done more efficiently...
+    buf1 = np.zeros((h1, w1))
+    cv2.drawContours(buf1, [contour_big], -1, 255, 1, offset=(-x1, -y1))
+    left1 = 0
+    for i in range(w1):
+        if buf1[0][i] == 255:
+            left1 = i
+            break
+    right1 = w1 - 1
+    for i in range(w1-1, -1, -1):
+        if buf1[0][i] == 255:
+            right1 = i
+            break
+    mid1 = left1 + (right1 - left1) / 2.0
+
+    buf2 = np.zeros((h2, w2))
+    cv2.drawContours(buf2, [contour_big], -2, 255, 2, offset=(-x2, -y2))
+    left2 = 0
+    for i in range(w2):
+        if buf2[-1][i] == 255:
+            left2 = i
+            break
+    right2 = w2 - 1
+    for i in range(w2-1, -1, -1):
+        if buf2[-1][i] == 255:
+            right2 = i
+            break
+    mid2 = left2 + (right2 - left2) / 2.0
+
+    mid_y = ((y1) + (y2 + h2)) / 2.0
+    mid_x = ((x1 + mid1) + (x2 + mid2)) / 2.0
+    return int(mid_x), int(mid_y)
 
 
 # find finger and touch / hover points in an image
@@ -72,12 +117,6 @@ def find(segmented_image, debugframe=None, options={}):
         x1, y1, w1, h1 = cv2.boundingRect(largest_contour)
         largest_area = byarea[-1][0]
         if largest_area > MIN_FINGER_SIZE:
-            # draw large finger
-            if debugframe is not None:
-                if not options['nocontour']:
-                    cv2.drawContours(debugframe, [largest_contour], -1, GREEN, LINE_WIDTH)
-                if not options['nobox']:
-                    cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
             # see if there's a reflection
             smaller_contour = byarea[-2][1]
             x2, y2, w2, h2 = cv2.boundingRect(smaller_contour)
@@ -88,19 +127,25 @@ def find(segmented_image, debugframe=None, options={}):
                 # hover
                 if debugframe is not None:
                     if not options['nocontour']:
+                        cv2.drawContours(debugframe, [largest_contour], -1, GREEN, LINE_WIDTH)
                         cv2.drawContours(debugframe, [smaller_contour], -1, GREEN, LINE_WIDTH)
                     if not options['nobox']:
+                        cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
                         cv2.rectangle(debugframe, (x2, y2), (x2 + w2, y2 + h2), RED, LINE_WIDTH)
-                # TODO better way of estimating this
-                hover_y = ((y1) + (y2 + h2)) / 2.0 # diff between top and bottom
-                hover_x = ((x1 + w1 / 2.0) + (x2 + w2 / 2.0)) / 2.0 # diff between centers
-                hover_x, hover_y = int(hover_x), int(hover_y)
+                hover_x, hover_y = findHoverPoint(largest_contour, x1, y1, w1, h1,
+                        smaller_contour, x2, y2, w2, h2)
                 return hover_x, hover_y, False
             else:
                 # touch
                 # find the touch point height
-                touch_y, touch_x = findTouchPoint(largest_contour, x1, y1, w1, h1)
+                touch_x, touch_y = findTouchPoint(largest_contour, x1, y1, w1, h1)
                 if touch_y is not None:
+                    if debugframe is not None:
+                        if not options['nocontour']:
+                            cv2.drawContours(debugframe, [largest_contour], -1, GREEN, LINE_WIDTH)
+                        if not options['nobox']:
+                            cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1),
+                                    RED, LINE_WIDTH)
                     return touch_x, touch_y, True
     return None, None, None
 
