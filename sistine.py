@@ -68,7 +68,7 @@ def main():
                 row = apparentlyNotThatSlowThinPointDetector(c, x, y, w, h)
                 cv2.line(frame, (x, row), (x + w, row), (255, 0, 0), 2)
 
-        cv2.imshow('frame', frame)
+        cv2.imshow('frame', frame[:,::-1,:])
 
         if cv2.waitKey(1) & 0xff == ord('q'):
             break
