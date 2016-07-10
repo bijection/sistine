@@ -15,6 +15,7 @@ FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
 REFLECTION_MIN_RATIO = 0.1
 FINGER_WIDTH_LOCATION_RATIO = 0.2 # percent of way down from point to dead space
+MOVING_AVERAGE_WEIGHT = 0.8
 
 CAPTURE_DIMENSION_X = 1280
 CAPTURE_DIMENSION_Y = 720
@@ -213,7 +214,7 @@ def calibration(ind):
     pt = pts[ind]
     x_calib, y_calib = pt
 
-    def _calibration(segmented, debugframe, options, ticks, drawframe, calib):
+    def _calibration(segmented, debugframe, options, ticks, drawframe, calib, state):
         if ticks > VERT_STAGE_SETUP_TIME:
             cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, RED, -1)
             x, y, touch = find(segmented, debugframe=drawframe, options=options)
@@ -231,8 +232,15 @@ def calibration(ind):
 
     return _calibration
 
-def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
+def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
+    if 'initialized' not in state:
+        nnn = (None, None, None)
+        state['last'] = [nnn, nnn, nnn] # last 3 results
+        state['last_drawn'] = None # a pair (x, y)
+        state['initialized'] = True
     x, y, touch = find(segmented, debugframe=drawframe, options=options)
+    state['last'].append((x, y, touch))
+    state['last'].pop(0)
     if 'hom' not in calib:
         webcam_points = calib['calibrationPts']
         real_points = calib['realPts']
@@ -255,11 +263,18 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
+        if state['last_drawn'] is not None:
+            x_ = int(x_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][0])
+            y_ = int(y_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][1])
+        state['last_drawn'] = (x_, y_)
+        cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
         if touch:
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, YELLOW, -1)
         else:
             cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
         cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, GREEN, -1)
+    else:
+        state['last_drawn'] = None
 
     return True
 
@@ -312,6 +327,7 @@ def main():
 
     debugframe = None
     # main loop
+    state = {}
     while True:
         if cv2.waitKey(1) & 0xff == ord('q'):
             break
@@ -332,7 +348,7 @@ def main():
             drawframe = cv2.cvtColor(segmented, cv2.COLOR_GRAY2BGR)
 
         ticks = (cv2.getTickCount() - initialStageTicks)/cv2.getTickFrequency()
-        if not currStage(segmented, debugframe, options, ticks, drawframe, calib):
+        if not currStage(segmented, debugframe, options, ticks, drawframe, calib, state):
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
         
