@@ -23,8 +23,8 @@ WINDOW_SHIFT_Y = (COMP_DIMENSION_Y - CAPTURE_DIMENSION_Y)/2
 CALIBRATION_X_COORDS = [.3,.5,.7]
 CALIBRATION_Y_COORDS = [.5,.7,.9]
 
-VERT_STAGE_SETUP_TIME = 2
-VERT_STAGE_TIME = 4
+VERT_STAGE_SETUP_TIME = 3
+VERT_STAGE_TIME = 5
 
 # unimportant parameters
 LINE_WIDTH = 2
@@ -198,23 +198,13 @@ def calibration(ind):
             x, y, touch = find(segmented, debugframe=drawframe, options=options)
             if touch is not None:
                 cv2.circle(drawframe, (x,y), CIRCLE_RADIUS, BLUE, -1)
-                calibrationPts = calib['calibrationPts']
-                sum_ = calibrationPts[ind]
-                calib['numPts'] += 1.
-                calibrationPts[ind] = (sum_[0] + x, sum_[1] + y)
+                calib['calibrationPts'][ind].append((sum_[0] + x, sum_[1] + y))
 
         else:
             cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, GREEN, -1)
         
         if ticks > VERT_STAGE_TIME:
             # cleanup
-            sumPt = calib['calibrationPts'][ind]
-            numPts = calib['numPts']
-            if numPts == 0:
-                print "No points recorded!"
-                numPts = 1
-            calib['calibrationPts'][ind] = (sumPt[0]/numPts, sumPt[1]/numPts)
-            calib['numPts'] = 0.
             calib['realPts'][ind] = systemPt
             return False
         return True
@@ -249,12 +239,15 @@ def main():
 
     initialStageTicks = cv2.getTickCount()
     calib = {
-        "numPts":0.,
-        "calibrationPts":[(0,0)] * 9,
+        "calibrationPts":[[] for i in range(9)],
         "realPts":[(0,0)] * 9
     }
 
-    stages = [calibration(i) for i in range(len(CALIBRATION_Y_COORDS) * len(CALIBRATION_X_COORDS))] + [mainLoop]
+    if 'nocalib' in sys.argv:
+        stages = [mainLoop]
+    else 'nocalib' in sys.argv:
+        stages = [calibration(i) for i in range(len(CALIBRATION_Y_COORDS) * len(CALIBRATION_X_COORDS))] + [mainLoop]
+
     currStage = stages.pop(0)
 
     # settings
@@ -292,6 +285,8 @@ def main():
         if not currStage(segmented, debugframe, options, ticks, drawframe, calib):
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
+            if currStage == mainLoop:
+                pdb.set_trace()
         
         # COMP / CAP
         
