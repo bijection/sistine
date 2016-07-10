@@ -22,6 +22,3 @@ def mouseclick(posx,posy):
         mouseEvent(kCGEventMouseMoved, posx,posy);
         mouseEvent(kCGEventLeftMouseDown, posx,posy);
         mouseEvent(kCGEventLeftMouseUp, posx,posy);
-
-if __name__ == '__main__':
-    mouseclick(0,0)
