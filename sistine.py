@@ -14,8 +14,8 @@ FINGER_COLOR_LOW = 90 # b in Lab space
 FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
 REFLECTION_MIN_RATIO = 0.1
-FINGER_WIDTH_LOCATION_RATIO = 0.2 # percent of way down from point to dead space
-MOVING_AVERAGE_WEIGHT = 0.8
+FINGER_WIDTH_LOCATION_RATIO = 0.5 # percent of way down from point to dead space
+MOVING_AVERAGE_WEIGHT = 0.5
 
 CAPTURE_DIMENSION_X = 1280
 CAPTURE_DIMENSION_Y = 720
@@ -306,7 +306,7 @@ def main():
     }
 
     if 'nocalib' in sys.argv:
-        with open('previous.pickle') as f:
+        with open('actually_good_calib.pickle') as f:
             calib = pickle.load(f)
         stages = [mainLoop]
     else:
