@@ -200,7 +200,7 @@ def calibration(ind):
     for i in range(len(CALIBRATION_X_COORDS)):
         x_frac = CALIBRATION_X_COORDS[i]
         for j in range(len(CALIBRATION_Y_COORDS)):
-            if i == 2 and j != 1:
+            if j == 0 and i != 1:
                 continue
             y_frac = CALIBRATION_Y_COORDS[j]
             x = int(x_frac * CAPTURE_DIMENSION_X)
@@ -244,6 +244,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         webcam_points = [i for s in webcam_points for i in s]
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
+        import 
 
     for x, y in calib['orp']:
         x_, y_ = applyTransform(x, y, calib['hom'])
