@@ -46,10 +46,14 @@ def findTouchPoint(contour, x, y, w, h):
 def main():
     cv2.ocl.setUseOpenCL(False)
 
+    # settings
     if 'test' in sys.argv:
         cap = cv2.VideoCapture('cv/fingers/fingers.mov')
     else:
         cap = cv2.VideoCapture(0)
+    orig = 'orig' in sys.argv
+    nobox = 'nobox' in sys.argv
+    nocontour = 'nocontour' in sys.argv
 
     # detector = cv2.SimpleBlobDetector()
     # main loop
@@ -63,23 +67,25 @@ def main():
         ret, frame = cap.read()
         if frame is None:
             break
-        frame = frame[:,::-1,:] # unmirror left to right
-        oldframe = frame
+        frame = cv2.flip(frame, 1) # unmirror left to right
+        original = frame
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB)
 
-        # frame = cv2.medianBlur(frame, 5)
         frame = cv2.inRange(frame[:,:,2], FINGER_COLOR_LOW, FINGER_COLOR_HIGH)
 
-        # frame = cv2.rectangle(frame, (x-100,y-100), (x+100,y+100), 255)
         _, cnts, _ = cv2.findContours(frame.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if orig:
+            drawframe = original
+        else:
+            drawframe  = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 
         byarea = []
         for c in cnts:
             area = cv2.contourArea(c)
             byarea.append((area, c))
         byarea.sort(key=lambda i: i[0])
-        frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         if len(byarea) > 2:
             # is there a finger?
             largest_contour = byarea[-1][1]
@@ -87,8 +93,10 @@ def main():
             largest_area = byarea[-1][0]
             if largest_area > MIN_FINGER_SIZE:
                 # draw large finger
-                cv2.drawContours(frame, [largest_contour], -1, GREEN, LINE_WIDTH)
-                cv2.rectangle(frame, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
+                if not nocontour:
+                    cv2.drawContours(drawframe, [largest_contour], -1, GREEN, LINE_WIDTH)
+                if not nobox:
+                    cv2.rectangle(drawframe, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
                 # see if there's a reflection
                 smaller_contour = byarea[-2][1]
                 x2, y2, w2, h2 = cv2.boundingRect(smaller_contour)
@@ -97,21 +105,23 @@ def main():
                 if (not (x1 + w1 < x2 or x2 + w2 < x1)) and y2 + h2 < y1 and \
                         smaller_area / largest_area >= REFLECTION_MIN_RATIO:
                     # hover
-                    cv2.drawContours(frame, [smaller_contour], -1, GREEN, LINE_WIDTH)
-                    cv2.rectangle(frame, (x2, y2), (x2 + w2, y2 + h2), RED, LINE_WIDTH)
+                    if not nocontour:
+                        cv2.drawContours(drawframe, [smaller_contour], -1, GREEN, LINE_WIDTH)
+                    if not nobox:
+                        cv2.rectangle(drawframe, (x2, y2), (x2 + w2, y2 + h2), RED, LINE_WIDTH)
                     # TODO better way of estimating this
                     hover_y = ((y1) + (y2 + h2)) / 2.0 # diff between top and bottom
                     hover_x = ((x1 + w1 / 2.0) + (x2 + w2 / 2.0)) / 2.0 # diff between centers
                     hover_x, hover_y = int(hover_x), int(hover_y)
-                    cv2.circle(frame, (hover_x, hover_y), CIRCLE_RADIUS, BLUE, -1)
+                    cv2.circle(drawframe, (hover_x, hover_y), CIRCLE_RADIUS, BLUE, -1)
                 else:
                     # touch
                     # find the touch point height
                     touch_y, touch_x = findTouchPoint(largest_contour, x1, y1, w1, h1)
                     if touch_y is not None:
-                        cv2.circle(frame, (touch_x, touch_y), CIRCLE_RADIUS, BLUE, -1)
+                        cv2.circle(drawframe, (touch_x, touch_y), CIRCLE_RADIUS, BLUE, -1)
 
-        cv2.imshow('frame', frame)
+        cv2.imshow('drawframe', drawframe)
 
     # release everything
     cap.release()
