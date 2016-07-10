@@ -178,7 +178,7 @@ def calibration(ind):
     pts = []
     for i in range(len(CALIBRATION_X_COORDS)):
         x_frac = CALIBRATION_X_COORDS[i]
-        for j in CALIBRATION_Y_COORDS:
+        for j in range(len(CALIBRATION_Y_COORDS)):
             if i == 2 and j != 1:
                 continue
             y_frac = CALIBRATION_Y_COORDS[j]
@@ -262,7 +262,7 @@ def main():
     if 'nocalib' in sys.argv:
         stages = [mainLoop]
     else:
-        stages = [calibration(i) for i in range(len(CALIBRATION_Y_COORDS) * len(CALIBRATION_X_COORDS))] + [mainLoop]
+        stages = [calibration(i) for i in range(7)] + [mainLoop]
 
     currStage = stages.pop(0)
 
