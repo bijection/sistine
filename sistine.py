@@ -235,6 +235,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     if 'hom' not in calib:
         webcam_points = calib['calibrationPts']
         real_points = calib['realPts']
+        calib['orp'] = real_points
         screen_points = []
         for i in range(len(real_points)):
             for _ in range(len(webcam_points[i])):
@@ -243,6 +244,11 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         webcam_points = [i for s in webcam_points for i in s]
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
+
+    for x, y in calib['orp']:
+        x_, y_ = applyTransform(x, y, calib['hom'])
+        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, RED, -1)
+        cv2.line(drawframe, (x, y), (x_, y_), RED, LINE_WIDTH)
 
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
