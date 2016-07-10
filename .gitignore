@@ -1,3 +1,4 @@
 *.jpg
+*.pyc
 *.pickle
 *.mov
