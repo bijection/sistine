@@ -214,6 +214,18 @@ def calibration(ind):
 
 def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     x, y, touch = find(segmented, debugframe=drawframe, options=options)
+    if 'hom' not in calib:
+        webcam_points = calib['calibrationPts']
+        real_points = calib['realPts']
+        screen_points = []
+        for i in range(len(real_points)):
+            for _ in range(len(webcam_points[i])):
+                screen_points.append(real_points[i])
+
+        webcam_points = [i for s in webcam_points for i in s]
+        hom = findTransform(webcam_points, screen_points)
+        calib['hom'] = hom
+
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
@@ -223,8 +235,10 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
 
 # points are in the format [(x, y)]
 def findTransform(webcam_points, screen_points):
-    webcam_points = np.array(webcam_points)
-    screen_points = np.array(screen_points)
+    print webcam_points
+    print screen_points
+    webcam_points = np.array(webcam_points).astype(np.float)
+    screen_points = np.array(screen_points).astype(np.float)
     hom, mask = cv2.findHomography(webcam_points, screen_points, method=cv2.RANSAC)
     return hom
 
@@ -290,17 +304,6 @@ def main():
         if not currStage(segmented, debugframe, options, ticks, drawframe, calib):
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
-            if currStage == mainLoop:
-                webcam_points = calib['calibrationPts']
-                real_points = calib['realPts']
-                screen_points = []
-                for i in range(len(real_points)):
-                    for _ in range(len(real_points[i])):
-                        screen_points.append(real_points[i])
-                hom = findTransform(webcam_points, screen_points)
-                calib['hom'] = hom
-        
-        # COMP / CAP
         
         cv2.imshow('drawframe', drawframe)
         cv2.moveWindow('drawframe', WINDOW_SHIFT_X, WINDOW_SHIFT_Y)
