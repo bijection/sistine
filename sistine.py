@@ -245,7 +245,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
         import pickle
-        pickle.dump(calib, 'good_calib.pickle')
+        pickle.dump(calib, open('good_calib.pickle','w+'))
 
     for i, j in calib['orp']:
         i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
