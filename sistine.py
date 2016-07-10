@@ -244,7 +244,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         webcam_points = [i for s in webcam_points for i in s]
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
-        pickle.dump(calib, open('good_calib.pickle','w+'))
+        pickle.dump(calib, open('previous.pickle','w+'))
 
     for i, j in calib['orp']:
         i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
@@ -286,10 +286,9 @@ def main():
         "realPts":[(0,0)] * 7
     }
 
-    with open('actually_good_calib.pickle') as f:
-        calib = pickle.load(f)
-
     if 'nocalib' in sys.argv:
+        with open('previous.pickle') as f:
+            calib = pickle.load(f)
         stages = [mainLoop]
     else:
         stages = [calibration(i) for i in range(7)] + [mainLoop]
