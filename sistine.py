@@ -170,10 +170,10 @@ def find(segmented_image, debugframe=None, options={}):
                     smaller_area / largest_area >= REFLECTION_MIN_RATIO:
                 # hover
                 if debugframe is not None:
-                    if not options['nocontour']:
+                    if not options['nocontour'] and not options['nodemodebug']:
                         cv2.drawContours(debugframe, [largest_contour], -1, GREEN, LINE_WIDTH)
                         cv2.drawContours(debugframe, [smaller_contour], -1, GREEN, LINE_WIDTH)
-                    if not options['nobox']:
+                    if not options['nobox'] and not options['nodemodebug']:
                         cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
                         cv2.rectangle(debugframe, (x2, y2), (x2 + w2, y2 + h2), RED, LINE_WIDTH)
                 hover_x, hover_y = findHoverPoint(largest_contour, x1, y1, w1, h1,
@@ -185,9 +185,9 @@ def find(segmented_image, debugframe=None, options={}):
                 touch_x, touch_y, wloc, width = findTouchPoint(largest_contour, x1, y1, w1, h1)
                 if touch_y is not None:
                     if debugframe is not None:
-                        if not options['nocontour']:
+                        if not options['nocontour'] and not options['nodemodebug']:
                             cv2.drawContours(debugframe, [largest_contour], -1, GREEN, LINE_WIDTH)
-                        if not options['nobox']:
+                        if not options['nobox'] and not options['nodemodebug']:
                             cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1),
                                     RED, LINE_WIDTH)
                         if not options['nowidth']:
@@ -324,7 +324,7 @@ def main():
     }
 
     if 'nocalib' in sys.argv:
-        with open('good_calib.pickle') as f:
+        with open('previous.pickle') as f:
             calib = pickle.load(f)
         stages = [mainLoop]
     else:
@@ -344,6 +344,7 @@ def main():
     options['nowidth'] = 'nowidth' in sys.argv
     options['nocalib'] = 'nocalib' in sys.argv
     options['demo'] = 'demo' in sys.argv
+    options['nodemodebug'] = 'nodemodebug' in sys.argv
     if options['demo']:
         options['nocontour'] = True
         options['nowidth'] = True
