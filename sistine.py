@@ -37,6 +37,7 @@ PURPLE = (255, 0, 255)
 CYAN = (255, 255, 0)
 BLUE = (255, 0, 0)
 GREEN = (0, 255, 0)
+YELLOW = (0, 255, 255)
 RED = (0, 0, 255)
 CALIB_CIRCLE_RADIUS = 10
 
@@ -254,7 +255,10 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
-        cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
+        if touch:
+            cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, YELLOW, -1)
+        else:
+            cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
         cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, GREEN, -1)
 
     return True
