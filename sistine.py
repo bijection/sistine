@@ -46,6 +46,8 @@ def main():
         # I think there's a callback-based way to do this as well, but I think
         # this way works fine for us
         ret, frame = cap.read()
+        if frame is None:
+            break
         frame = frame[:,::-1,:] # unmirror left to right
         oldframe = frame
 
