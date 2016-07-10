@@ -13,6 +13,7 @@ FINGER_COLOR_LOW = 90 # b in Lab space
 FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
 REFLECTION_MIN_RATIO = 0.1
+FINGER_WIDTH_LOCATION_RATIO = 0.2 # percent of way down from point to dead space
 
 CAPTURE_DIMENSION_X = 1280
 CAPTURE_DIMENSION_Y = 720
@@ -28,9 +29,10 @@ VERT_STAGE_TIME = 6
 
 # unimportant parameters
 LINE_WIDTH = 2
+LINE_HEIGHT = 100
 CIRCLE_RADIUS = 6
-BLUE = (255, 0, 255)
-PURPLE = (255, 0, 0)
+PURPLE = (255, 0, 255)
+BLUE = (255, 0, 0)
 GREEN = (0, 255, 0)
 RED = (0, 0, 255)
 CALIB_CIRCLE_RADIUS = 10
@@ -67,12 +69,26 @@ def findTouchPoint(contour, x, y, w, h):
             width = diff
             thiny = row
             thinx = int(left + diff / 2.0)
-    cv2.circle(buf, (thinx, thiny), CIRCLE_RADIUS, BLUE, -1)
+    cv2.circle(buf, (thinx, thiny), CIRCLE_RADIUS, PURPLE, -1)
     validstart = int(round(h * MIDPOINT_DETECTION_IGNORE_ZONE))
     validstop = int(round(h * (1 - MIDPOINT_DETECTION_IGNORE_ZONE)))
     if not (validstart < thiny < validstop):
-        return None, None
-    return thinx + x, thiny + y
+        return None, None, None, None
+
+    width_row = int(thiny + FINGER_WIDTH_LOCATION_RATIO * (validstop - thiny))
+    left = 0
+    for i in range(w):
+        if buf[width_row][i] == 255:
+            left = i
+            break
+    right = w-1
+    for i in range(w-1, -1, -1):
+        if buf[width_row][i] == 255:
+            right = i
+            break
+    widthloc = x + left
+    width = right - left
+    return thinx + x, thiny + y, widthloc, width
 
 
 def findHoverPoint(
@@ -160,7 +176,7 @@ def find(segmented_image, debugframe=None, options={}):
             else:
                 # touch
                 # find the touch point height
-                touch_x, touch_y = findTouchPoint(largest_contour, x1, y1, w1, h1)
+                touch_x, touch_y, wloc, width = findTouchPoint(largest_contour, x1, y1, w1, h1)
                 if touch_y is not None:
                     if debugframe is not None:
                         if not options['nocontour']:
@@ -168,6 +184,11 @@ def find(segmented_image, debugframe=None, options={}):
                         if not options['nobox']:
                             cv2.rectangle(debugframe, (x1, y1), (x1 + w1, y1 + h1),
                                     RED, LINE_WIDTH)
+                        if not options['nowidth']:
+                            cv2.line(debugframe, (wloc, touch_y + LINE_HEIGHT), (wloc, touch_y - LINE_HEIGHT),
+                                    BLUE, LINE_WIDTH)
+                            cv2.line(debugframe, (wloc + width, touch_y + LINE_HEIGHT),
+                                    (wloc + width, touch_y - LINE_HEIGHT), BLUE, LINE_WIDTH)
                     return touch_x, touch_y, True
     return None, None, None
 
@@ -195,7 +216,7 @@ def calibration(ind):
             cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, RED, -1)
             x, y, touch = find(segmented, debugframe=drawframe, options=options)
             if touch is not None:
-                cv2.circle(drawframe, (x,y), CIRCLE_RADIUS, BLUE, -1)
+                cv2.circle(drawframe, (x,y), CIRCLE_RADIUS, PURPLE, -1)
                 calib['calibrationPts'][ind].append((x,y))
 
         else:
@@ -224,9 +245,9 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         calib['hom'] = hom
 
     if touch is not None:
-        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
+        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
-        cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, PURPLE, -1)
+        cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, BLUE, -1)
 
     return True
 
@@ -275,6 +296,7 @@ def main():
     options['orig'] = 'orig' in sys.argv
     options['nobox'] = 'nobox' in sys.argv
     options['nocontour'] = 'nocontour' in sys.argv
+    options['nowidth'] = 'nowidth' in sys.argv
 
     debugframe = None
     # main loop
