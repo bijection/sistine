@@ -171,26 +171,23 @@ def find(segmented_image, debugframe=None, options={}):
                     return touch_x, touch_y, True
     return None, None, None
 
-def opencv2system_coords(pt):
-    return (pt[0] + WINDOW_SHIFT_X, pt[1] + WINDOW_SHIFT_Y)
-
-def system2opencv_coords(pt):
-    return (pt[0] - WINDOW_SHIFT_X, pt[1] - WINDOW_SHIFT_Y)
-
 def calibration(ind):
     rows,cols,_ = (720, 1280, 3) # frame.shape
     col = cols/2
 
     pts = []
-    for x_frac in CALIBRATION_X_COORDS:
-        for y_frac in CALIBRATION_Y_COORDS:
+    for i in range(len(CALIBRATION_X_COORDS)):
+        x_frac = CALIBRATION_X_COORDS[i]
+        for j in CALIBRATION_Y_COORDS:
+            if i == 2 and j != 1:
+                continue
+            y_frac = CALIBRATION_Y_COORDS[j]
             x = int(x_frac * CAPTURE_DIMENSION_X)
             y = int(y_frac * CAPTURE_DIMENSION_Y)
             pt = (x,y)
             pts.append(pt)
 
     pt = pts[ind]
-    systemPt = opencv2system_coords(pt)
     x_calib, y_calib = pt
 
     def _calibration(segmented, debugframe, options, ticks, drawframe, calib):
@@ -206,7 +203,7 @@ def calibration(ind):
         
         if ticks > VERT_STAGE_TIME:
             # cleanup
-            calib['realPts'][ind] = systemPt
+            calib['realPts'][ind] = pt
             return False
         return True
 
