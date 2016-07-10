@@ -290,8 +290,6 @@ def main():
         if not currStage(segmented, debugframe, options, ticks, drawframe, calib):
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
-            if currStage == mainLoop:
-                pdb.set_trace()
         
         # COMP / CAP
         
