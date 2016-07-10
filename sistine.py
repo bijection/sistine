@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import sys, pdb
+import pickle
 
 # dont change parameters
 COMP_DIMENSION_X = 1440
@@ -31,7 +32,7 @@ VERT_STAGE_TIME = 6
 LINE_WIDTH = 2
 LINE_HEIGHT = 100
 CIRCLE_RADIUS = 6
-FINGER_RADIUS = 15
+FINGER_RADIUS = 40
 PURPLE = (255, 0, 255)
 CYAN = (255, 255, 0)
 BLUE = (255, 0, 0)
@@ -243,7 +244,6 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         webcam_points = [i for s in webcam_points for i in s]
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
-        import pickle
         pickle.dump(calib, open('good_calib.pickle','w+'))
 
     for i, j in calib['orp']:
@@ -255,6 +255,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
         cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
+        cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, GREEN, -1)
 
     return True
 
@@ -284,6 +285,9 @@ def main():
         "calibrationPts":[[] for i in range(9)],
         "realPts":[(0,0)] * 7
     }
+
+    with open('actually_good_calib.pickle') as f:
+        calib = pickle.load(f)
 
     if 'nocalib' in sys.argv:
         stages = [mainLoop]
