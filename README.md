@@ -1,6 +1,6 @@
 # sistine
 
-![Sistine * 3/2](sistine.jpg)
+![Sistine * 3/2](splash.png)
 
 zamm
 
