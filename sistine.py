@@ -6,6 +6,7 @@ import sys
 MIDPOINT_DETECTION_DEAD_ZONE = 0.1
 FINGER_COLOR_LOW = 90 # b in Lab space
 FINGER_COLOR_HIGH = 110 # b in Lab space
+MIN_FINGER_SIZE = 7000 # pixels
 
 # non parameters
 LINE_WIDTH = 2
@@ -42,6 +43,9 @@ def main():
     # detector = cv2.SimpleBlobDetector()
     # main loop
     while True:
+        if cv2.waitKey(1) & 0xff == ord('q'):
+            break
+
         # frame by frame capture
         # I think there's a callback-based way to do this as well, but I think
         # this way works fine for us
@@ -52,8 +56,8 @@ def main():
         oldframe = frame
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2LAB)
-        gray = frame[:,:,0]
 
+        # frame = cv2.medianBlur(frame, 5)
         frame = cv2.inRange(frame[:,:,2], FINGER_COLOR_LOW, FINGER_COLOR_HIGH)
 
         # frame = cv2.rectangle(frame, (x-100,y-100), (x+100,y+100), 255)
@@ -64,22 +68,23 @@ def main():
             area = cv2.contourArea(c)
             byarea.append((area, c))
         byarea.sort(key=lambda i: i[0])
-        frame = gray
-        _, frame = cv2.threshold(frame, 64, 255, cv2.THRESH_BINARY)
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
         if len(byarea) > 2:
-            for i in byarea[-2:]:
-                c = i[1]
-                cv2.drawContours(frame, [c], -1, (0, 255, 0), LINE_WIDTH)
-                x, y, w, h = cv2.boundingRect(c)
-                cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255), LINE_WIDTH)
-                row = apparentlyNotThatSlowThinPointDetector(c, x, y, w, h)
-                cv2.line(frame, (x, row), (x + w, row), (255, 0, 0), LINE_WIDTH)
+            # is there a finger?
+            largest_contour = byarea[-1][1]
+            largest_area = cv2.contourArea(largest_contour)
+            if largest_area > MIN_FINGER_SIZE:
+                # draw stuff
+                # XXX some duplicate computation below
+                for i in byarea[-2:]:
+                    c = i[1]
+                    cv2.drawContours(frame, [c], -1, (0, 255, 0), LINE_WIDTH)
+                    x, y, w, h = cv2.boundingRect(c)
+                    cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255), LINE_WIDTH)
+                    row = apparentlyNotThatSlowThinPointDetector(c, x, y, w, h)
+                    cv2.line(frame, (x, row), (x + w, row), (255, 0, 0), LINE_WIDTH)
 
         cv2.imshow('frame', frame)
-
-        if cv2.waitKey(1) & 0xff == ord('q'):
-            break
 
     # release everything
     cap.release()
