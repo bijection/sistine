@@ -3,7 +3,8 @@ import numpy as np
 import sys
 
 # parameters
-MIDPOINT_DETECTION_DEAD_ZONE = 0.1
+MIDPOINT_DETECTION_SKIP_ZONE = 0.08
+MIDPOINT_DETECTION_IGNORE_ZONE = 0.1
 FINGER_COLOR_LOW = 90 # b in Lab space
 FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
@@ -29,8 +30,8 @@ def findTouchPoint(contour, x, y, w, h):
     buf = np.zeros((h, w))
     cv2.drawContours(buf, [contour], -1, 255, 1, offset=(-x, -y))
     thiny, thinx, width = None, None, float('inf')
-    topstart = int(round(h * MIDPOINT_DETECTION_DEAD_ZONE))
-    bottomstop = int(round(h * (1 - MIDPOINT_DETECTION_DEAD_ZONE)))
+    topstart = int(round(h * MIDPOINT_DETECTION_SKIP_ZONE))
+    bottomstop = int(round(h * (1 - MIDPOINT_DETECTION_SKIP_ZONE)))
     for row in range(topstart, bottomstop + 1):
         left = 0
         for i in range(w):
@@ -48,7 +49,9 @@ def findTouchPoint(contour, x, y, w, h):
             thiny = row
             thinx = int(left + diff / 2.0)
     cv2.circle(buf, (thinx, thiny), CIRCLE_RADIUS, BLUE, -1)
-    if thiny == topstart or thiny == bottomstop:
+    validstart = int(round(h * MIDPOINT_DETECTION_IGNORE_ZONE))
+    validstop = int(round(h * (1 - MIDPOINT_DETECTION_IGNORE_ZONE)))
+    if not (validstart < thiny < validstop):
         return None, None
     return thinx + x, thiny + y
 
