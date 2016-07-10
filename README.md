@@ -1,4 +1,7 @@
 # sistine
+
+![Sistine * 3/2](sistine.jpg)
+
 zamm
 
 ## installation instructions
