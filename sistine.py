@@ -226,6 +226,8 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
 
+    return True
+
 # points are in the format [(x, y)]
 def findTransform(webcam_points, screen_points):
     webcam_points = np.array(webcam_points)
