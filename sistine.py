@@ -30,6 +30,7 @@ VERT_STAGE_TIME = 5
 LINE_WIDTH = 2
 CIRCLE_RADIUS = 6
 BLUE = (255, 0, 255)
+PURPLE = (255, 0, 0)
 GREEN = (0, 255, 0)
 RED = (0, 0, 255)
 CALIB_CIRCLE_RADIUS = 10
@@ -215,6 +216,8 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib):
     x, y, touch = find(segmented, debugframe=drawframe, options=options)
     if touch is not None:
         cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, BLUE, -1)
+        x_, y_ = applyTransform(x, y, calib['hom'])
+        cv2.circle(drawframe, (x_, y_), CIRCLE_RADIUS, PURPLE, -1)
 
     return True
 
@@ -288,7 +291,14 @@ def main():
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
             if currStage == mainLoop:
-                pdb.set_trace()
+                webcam_points = calib['calibrationPts']
+                real_points = calib['realPts']
+                screen_points = []
+                for i in range(len(real_points)):
+                    for _ in range(len(real_points[i])):
+                        screen_points.append(real_points[i])
+                hom = findTransform(webcam_points, screen_points)
+                calib['hom'] = hom
         
         # COMP / CAP
         
