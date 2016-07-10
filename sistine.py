@@ -5,7 +5,7 @@ import sys
 # lower = np.array([0, 0, 0], dtype = "uint8")
 # upper = np.array([45, 59, 50], dtype = "uint8")
 
-def hellaSlowThinPointDetector(contour, x, y, w, h):
+def apparentlyNotThatSlowThinPointDetector(contour, x, y, w, h):
     buf = np.zeros((h, w))
     cv2.drawContours(buf, [contour], -1, 255, 1, offset=(-x, -y))
     thiny, width = None, float('inf')
@@ -65,7 +65,7 @@ def main():
                 cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
                 x, y, w, h = cv2.boundingRect(c)
                 cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-                row = hellaSlowThinPointDetector(c, x, y, w, h)
+                row = apparentlyNotThatSlowThinPointDetector(c, x, y, w, h)
                 cv2.line(frame, (x, row), (x + w, row), (255, 0, 0), 2)
 
         cv2.imshow('frame', frame)
