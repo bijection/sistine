@@ -7,35 +7,46 @@ MIDPOINT_DETECTION_DEAD_ZONE = 0.1
 FINGER_COLOR_LOW = 90 # b in Lab space
 FINGER_COLOR_HIGH = 110 # b in Lab space
 MIN_FINGER_SIZE = 7000 # pixels
+REFLECTION_MIN_RATIO = 0.1
 
-# non parameters
+# unimportant parameters
 LINE_WIDTH = 2
+CIRCLE_RADIUS = 6
+BLUE = (255, 0, 255)
+GREEN = (0, 255, 0)
+RED = (0, 0, 255)
 
-def apparentlyNotThatSlowThinPointDetector(contour, x, y, w, h):
+def findTouchPoint(contour, x, y, w, h):
     buf = np.zeros((h, w))
     cv2.drawContours(buf, [contour], -1, 255, 1, offset=(-x, -y))
-    thiny, width = None, float('inf')
+    thiny, thinx, width = None, None, float('inf')
     topstart = int(round(h * MIDPOINT_DETECTION_DEAD_ZONE))
     bottomstop = int(round(h * (1 - MIDPOINT_DETECTION_DEAD_ZONE)))
-    for row in range(topstart, bottomstop):
-        for x in range(w):
-            if buf[row][x] == 255:
-                left = x
+    for row in range(topstart, bottomstop + 1):
+        left = 0
+        for i in range(w):
+            if buf[row][i] == 255:
+                left = i
                 break
-        for x in range(w-1, -1, -1):
-            if buf[row][x] == 255:
-                right = x
+        right = w-1
+        for i in range(w-1, -1, -1):
+            if buf[row][i] == 255:
+                right = i
                 break
         diff = right - left
         if diff < width:
             width = diff
             thiny = row
-    return thiny + y # include offset in here
+            thinx = int(left + diff / 2.0)
+    cv2.circle(buf, (thinx, thiny), CIRCLE_RADIUS, BLUE, -1)
+    if thiny == topstart or thiny == bottomstop:
+        return None, None
+    return thiny + y, thinx + x
 
 def main():
     cv2.ocl.setUseOpenCL(False)
 
-    if len(sys.argv) >= 2 and sys.argv[1] == 'test':
+    if 'test' in sys.argv:
         cap = cv2.VideoCapture('cv/fingers/fingers.mov')
     else:
         cap = cv2.VideoCapture(0)
@@ -72,17 +83,33 @@ def main():
         if len(byarea) > 2:
             # is there a finger?
             largest_contour = byarea[-1][1]
-            largest_area = cv2.contourArea(largest_contour)
+            x1, y1, w1, h1 = cv2.boundingRect(largest_contour)
+            largest_area = byarea[-1][0]
             if largest_area > MIN_FINGER_SIZE:
-                # draw stuff
-                # XXX some duplicate computation below
-                for i in byarea[-2:]:
-                    c = i[1]
-                    cv2.drawContours(frame, [c], -1, (0, 255, 0), LINE_WIDTH)
-                    x, y, w, h = cv2.boundingRect(c)
-                    cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255), LINE_WIDTH)
-                    row = apparentlyNotThatSlowThinPointDetector(c, x, y, w, h)
-                    cv2.line(frame, (x, row), (x + w, row), (255, 0, 0), LINE_WIDTH)
+                # draw large finger
+                cv2.drawContours(frame, [largest_contour], -1, GREEN, LINE_WIDTH)
+                cv2.rectangle(frame, (x1, y1), (x1 + w1, y1 + h1), RED, LINE_WIDTH)
+                # see if there's a reflection
+                smaller_contour = byarea[-2][1]
+                x2, y2, w2, h2 = cv2.boundingRect(smaller_contour)
+                smaller_area = byarea[-2][0]
+                # if they overlap in X and the smaller one is above the larger one
+                if (not (x1 + w1 < x2 or x2 + w2 < x1)) and y2 + h2 < y1 and \
+                        smaller_area / largest_area >= REFLECTION_MIN_RATIO:
+                    # hover
+                    cv2.drawContours(frame, [smaller_contour], -1, GREEN, LINE_WIDTH)
+                    cv2.rectangle(frame, (x2, y2), (x2 + w2, y2 + h2), RED, LINE_WIDTH)
+                    # TODO better way of estimating this
+                    hover_y = ((y1) + (y2 + h2)) / 2.0 # diff between top and bottom
+                    hover_x = ((x1 + w1 / 2.0) + (x2 + w2 / 2.0)) / 2.0 # diff between centers
+                    hover_x, hover_y = int(hover_x), int(hover_y)
+                    cv2.circle(frame, (hover_x, hover_y), CIRCLE_RADIUS, BLUE, -1)
+                else:
+                    # touch
+                    # find the touch point height
+                    touch_y, touch_x = findTouchPoint(largest_contour, x1, y1, w1, h1)
+                    if touch_y is not None:
+                        cv2.circle(frame, (touch_x, touch_y), CIRCLE_RADIUS, BLUE, -1)
 
         cv2.imshow('frame', frame)
 
