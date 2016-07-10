@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>SISTINE | BETTER THAN SLICED BREAD</title>
+	<style type="text/css">
+		body, html {
+			position: absolute;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+		}
+		#main {
+			height: 100%;
+			background: url(sistine.jpg);
+			background: 
+		}
+	</style>
+</head>
+<body>
+<div id='main'></div>
+<script type="text/javascript">
+
+	var scale = .8
+
+	var bgsize = 3548
+
+	var xoffset = 2210;
+	var yoffset = 900;
+
+	var clicked = false
+
+	var mousex = 0
+	var mousey = 0
+
+	document.addEventListener('mousemove', function(e){
+		console.log(bgsize * scale)
+		mousex = e.clientX
+		mousey = e.clientY
+	})
+
+	document.addEventListener('mousedown', function(e){
+		clicked = true
+	})
+
+	document.addEventListener('mouseup', function(e){
+		clicked = false
+	})
+
+	requestAnimationFrame(function tick(){
+		requestAnimationFrame(tick)
+		
+		if(!clicked){
+			scale = Math.max(scale*.95, .8)
+		} else {
+			scale = Math.min(scale*1.05, 3)
+		}
+		main.style['background-position'] = (mousex + xoffset* scale)+'px '+(mousey + yoffset* scale)+'px'
+		main.style['background-size'] = (bgsize* scale)+'px'
+
+	})
+
+</script>
+</body>
+</html>
