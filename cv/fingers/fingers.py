@@ -67,8 +67,6 @@ while (True):
     e2 = cv2.getTickCount()
     sum_ += (e2 - e1)/cv2.getTickFrequency()
     print sum_/n
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
 
 cap.release()
 cv2.destroyAllWindows()
