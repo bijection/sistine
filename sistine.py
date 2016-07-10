@@ -255,13 +255,15 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
         calib['hom'] = hom
         pickle.dump(calib, open('previous.pickle','w+'))
 
-    for i, j in calib['orp']:
-        i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
-        cv2.circle(drawframe, (i, j), CIRCLE_RADIUS, RED, -1)
-        cv2.line(drawframe, (i, j), (i_, j_), RED, LINE_WIDTH)
+    if not options['nocalib']:
+        for i, j in calib['orp']:
+            i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
+            cv2.circle(drawframe, (i, j), CIRCLE_RADIUS, RED, -1)
+            cv2.line(drawframe, (i, j), (i_, j_), RED, LINE_WIDTH)
 
     if touch is not None:
-        cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
+        if not options['demo']:
+            cv2.circle(drawframe, (x, y), CIRCLE_RADIUS, PURPLE, -1)
         x_, y_ = applyTransform(x, y, calib['hom'])
         if state['last_drawn'] is not None:
             x_ = int(x_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][0])
@@ -324,6 +326,13 @@ def main():
     options['nobox'] = 'nobox' in sys.argv
     options['nocontour'] = 'nocontour' in sys.argv
     options['nowidth'] = 'nowidth' in sys.argv
+    options['nocalib'] = 'nocalib' in sys.argv
+    options['demo'] = 'demo' in sys.argv
+    if options['demo']:
+        options['nocontour'] = True
+        options['nowidth'] = True
+        options['nobox'] = True
+        options['nocalib'] = True
 
     debugframe = None
     # main loop
@@ -344,6 +353,8 @@ def main():
         # only matters for debugging
         if options['orig']:
             drawframe = frame
+        elif options['demo']:
+            drawframe = np.zeros_like(frame)
         else:
             drawframe = cv2.cvtColor(segmented, cv2.COLOR_GRAY2BGR)
 
