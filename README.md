@@ -4,8 +4,7 @@
 
 We turned a MacBook into a touchscreen using only $1 of hardware and a little bit of computer vision. The proof-of-concept, dubbed “Project Sistine” after our [recreation](https://www.anishathalye.com/media/2018/04/03/thumbnail.jpg) of the famous [painting](https://en.wikipedia.org/wiki/The_Creation_of_Adam) in the Sistine Chapel, was prototyped by [Anish Athalye](https://twitter.com/anishathalye), [Kevin Kwok](https://twitter.com/antimatter15), [Guillermo Webster](https://twitter.com/biject), and [Logan Engstrom](https://github.com/lengstrom) in about 16 hours.
 
-![Imgur](https://i.imgur.com/WehPTYM.gifv)
-
+![Imgur](https://i.imgur.com/WehPTYM.gif)
 
 ## Basic Principle
 
