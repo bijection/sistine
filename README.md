@@ -13,6 +13,14 @@ The basic principle behind Sistine is simple. Surfaces viewed from an angle tend
 Kevin, back in middle school, noticed this phenomenon and built [ShinyTouch](https://antimatter15.com/project/shinytouch/), utilizing an external webcam to build a touch input system requiring virtually no setup. We wanted to see if we could miniaturize the idea and make it work without an external webcam. Our idea was to retrofit a small mirror in front of a MacBook’s built-in webcam, so that the webcam would be looking down at the computer screen at a sharp angle. The camera would be able to see fingers hovering over or touching the screen, and we’d be able to translate the video feed into touch events using computer vision.
 
 
-## installation instructions
+## Installation
 
-* Install OpenCV 3 using `brew install opencv3` or whatever
+* Install OpenCV 3 using __brew install opencv3__ or whatever
+
+## Running
+
+__/usr/bin/python sistine.py__  # this uses the "system" Python provided by Apple which already has the [Quartz module](https://pypi.org/project/pyobjc-framework-Quartz) installed
+
+If you want to use a brew-installed Python then you may need to:
+* __pip2 install pyobjc-framework-Quartz__  # required only once
+* __python2 sistine.py__
