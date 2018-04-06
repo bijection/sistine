@@ -1,7 +1,11 @@
+#!/usr/bin/env python
+
+# import pdb
+import pickle
+import sys
+
 import cv2
 import numpy as np
-import sys, pdb
-import pickle
 import simulate
 
 # dont change parameters
@@ -11,11 +15,11 @@ COMP_DIMENSION_Y = 900
 # parameters
 MIDPOINT_DETECTION_SKIP_ZONE = 0.08
 MIDPOINT_DETECTION_IGNORE_ZONE = 0.1
-FINGER_COLOR_LOW = 90 # b in Lab space
-FINGER_COLOR_HIGH = 110 # b in Lab space
-MIN_FINGER_SIZE = 7000 # pixels
+FINGER_COLOR_LOW = 90  # b in Lab space
+FINGER_COLOR_HIGH = 110  # b in Lab space
+MIN_FINGER_SIZE = 7000  # pixels
 REFLECTION_MIN_RATIO = 0.1
-FINGER_WIDTH_LOCATION_RATIO = 0.5 # percent of way down from point to dead space
+FINGER_WIDTH_LOCATION_RATIO = 0.5  # percent of way down from point to dead space
 MOVING_AVERAGE_WEIGHT = 0.5
 
 CAPTURE_DIMENSION_X = 1280
@@ -43,6 +47,7 @@ YELLOW = (0, 255, 255)
 RED = (0, 0, 255)
 CALIB_CIRCLE_RADIUS = 10
 
+
 def segmentImage(image):
     # this is kinda wrong cause image is actually BGR
     # but apparently it works??
@@ -50,8 +55,10 @@ def segmentImage(image):
     image = cv2.inRange(image[:,:,2], FINGER_COLOR_LOW, FINGER_COLOR_HIGH)
     return image
 
+
 def opencv2system(ox, oy):
     return (ox + WINDOW_SHIFT_X, oy + WINDOW_SHIFT_Y)
+
 
 def findTouchPoint(contour, x, y, w, h):
     buf = np.zeros((h, w))
@@ -148,7 +155,7 @@ def findHoverPoint(
 # x and y and touch are none if nothing is found
 # touch is true if it's a touch, otherwise it's false
 def find(segmented_image, debugframe=None, options={}):
-    found_x, found_y, touch = None, None, None
+    # found_x, found_y, touch = None, None, None
     _, cnts, _ = cv2.findContours(segmented_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     byarea = []
     for c in cnts:
@@ -198,9 +205,10 @@ def find(segmented_image, debugframe=None, options={}):
                     return touch_x, touch_y, True
     return None, None, None
 
+
 def calibration(ind):
-    rows,cols,_ = (720, 1280, 3) # frame.shape
-    col = cols/2
+    # rows, cols, _ = (720, 1280, 3)  # frame.shape
+    # col = cols/2
 
     pts = []
     for i in range(len(CALIBRATION_X_COORDS)):
@@ -235,11 +243,12 @@ def calibration(ind):
 
     return _calibration
 
+
 def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
     if 'initialized' not in state:
         nnn = (None, None, None)
-        state['last'] = [nnn, nnn, nnn] # last 3 results
-        state['last_drawn'] = None # a pair (x, y)
+        state['last'] = [nnn, nnn, nnn]  # last 3 results
+        state['last_drawn'] = None  # a pair (x, y)
         state['initialized'] = True
         state['md'] = False
         state['usemouse'] = False
@@ -260,7 +269,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
         hom = findTransform(webcam_points, screen_points)
         calib['hom'] = hom
         if not ('nocalib' in sys.argv):
-            pickle.dump(calib, open('previous.pickle','w+'))
+            pickle.dump(calib, open('previous.pickle', 'w+'))
 
     if not options['nocalib']:
         for i, j in calib['orp']:
@@ -277,7 +286,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
             y_ = int(y_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][1])
         state['last_drawn'] = (x_, y_)
         cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
-        shouldMouse = True #state['usemouse']
+        shouldMouse = True  # state['usemouse']
         mx, my = opencv2system(x_,y_)
         if shouldMouse:
             simulate.mousemove(mx, my)
@@ -297,10 +306,11 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
 
     return True
 
+
 # points are in the format [(x, y)]
 def findTransform(webcam_points, screen_points):
-    print webcam_points
-    print screen_points
+    print(webcam_points)
+    print(screen_points)
     webcam_points = np.array(webcam_points).astype(np.float)
     screen_points = np.array(screen_points).astype(np.float)
     hom, mask = cv2.findHomography(webcam_points, screen_points, method=cv2.RANSAC)
@@ -311,17 +321,17 @@ def findTransform(webcam_points, screen_points):
 def applyTransform(x, y, homography):
     inp = np.array([[[x, y]]], dtype=np.float)
     res = cv2.perspectiveTransform(inp, homography)
-    x_, y_ = res[0,0]
+    x_, y_ = res[0, 0]
     return int(round(x_)), int(round(y_))
 
 
 def main():
-    cv2.ocl.setUseOpenCL(False) # some stuff dies if you don't do this
+    cv2.ocl.setUseOpenCL(False)  # some stuff dies if you don't do this
 
     initialStageTicks = cv2.getTickCount()
     calib = {
-        "calibrationPts":[[] for i in range(9)],
-        "realPts":[(0,0)] * 7
+        "calibrationPts": [[] for i in range(9)],
+        "realPts": [(0,0)] * 7
     }
 
     if 'nocalib' in sys.argv:
@@ -368,7 +378,7 @@ def main():
         ret, frame = cap.read()
         if frame is None:
             break
-        frame = cv2.flip(frame, 1) # unmirror left to right
+        frame = cv2.flip(frame, 1)  # unmirror left to right
         segmented = segmentImage(frame)
 
         # only matters for debugging
@@ -383,15 +393,16 @@ def main():
         if not currStage(segmented, debugframe, options, ticks, drawframe, calib, state):
             currStage = stages.pop(0)
             initialStageTicks = cv2.getTickCount()
-        
+
         cv2.imshow('drawframe', drawframe)
         cv2.moveWindow('drawframe', WINDOW_SHIFT_X, WINDOW_SHIFT_Y)
 
     # release everything
     cap.release()
     cv2.destroyAllWindows()
-    #if state['md']:
+    # if state['md']:
     #    simulate.mouseup(mx, my)
+
 
 if __name__ == '__main__':
     main()
