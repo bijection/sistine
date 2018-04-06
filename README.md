@@ -19,7 +19,7 @@ Kevin, back in middle school, noticed this phenomenon and built [ShinyTouch](htt
 
 ## Running
 
-__/usr/bin/python sistine.py__  # this uses the "system" Python provided by Apple which already has the [Quartz module](https://pypi.org/project/pyobjc-framework-Quartz) installed
+__/usr/bin/python sistine.py__  # this uses the "system" Python provided by Apple which already includes the [Quartz module](https://pypi.org/project/pyobjc-framework-Quartz)
 
 If you want to use a brew-installed Python then you may need to:
 * __pip2 install pyobjc-framework-Quartz__  # required only once
