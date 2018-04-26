@@ -14,14 +14,16 @@ Kevin, back in middle school, noticed this phenomenon and built [ShinyTouch](htt
 
 (Read the rest of our blog post, including a video demo and a high-level explanation of the algorithm, [here](https://www.anishathalye.com/2018/04/03/macbook-touchscreen/))
 
-## Installation
+## Installation (with Homebrew Python)
 
-* Install OpenCV 3 using __brew install opencv3__ or whatever
+* First, make sure you have [Mac Homebrew](https://brew.sh/) installed on your computer. If not, you can install it by running `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
+
+* Install Python 2 via Homebrew with `brew install python2`
+
+* Install OpenCV 3 via Homebrew with `brew install opencv3`
+
+* Install PyObjC via Pip with `pip2 install pyobjc`
 
 ## Running
 
-__/usr/bin/python2.7 sistine.py__  # this uses the "system" Python provided by Apple which already includes [Quartz module](https://pypi.org/project/pyobjc-framework-Quartz)
-
-If instead you want to use a brew-installed Python then you may need to:
-* __pip2 install pyobjc-framework-Quartz__  # required only once
-* __python2 sistine.py__
+Run `python2 sistine.py`
