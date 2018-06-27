@@ -2,7 +2,7 @@
 
 ![Sistine * 3/2](splash.png)
 
-I turned a Windows-PC into a touchscreen using only $0.3 or Rs 20 of hardware and a little bit of computer vision. The proof-of-concept, dubbed “Project Sistine” after our [recreation](https://www.anishathalye.com/media/2018/04/03/thumbnail.jpg) of the famous [painting](https://en.wikipedia.org/wiki/The_Creation_of_Adam) in the Sistine Chapel, was prototyped by [Anish Athalye](https://www.anishathalye.com/), [Kevin Kwok](https://twitter.com/antimatter15), [Guillermo Webster](https://twitter.com/biject), and [Logan Engstrom](https://github.com/lengstrom) in about 16 hours. It was thus mordified by [Ashish Gupta](https://github.com/ashishgupta1350) to work from mac/linux to windows.
+Turn a Windows-PC into a touchscreen using only $1.0 of hardware. The proof-of-concept, dubbed “Project Sistine” after our [recreation](https://www.anishathalye.com/media/2018/04/03/thumbnail.jpg) of the famous [painting](https://en.wikipedia.org/wiki/The_Creation_of_Adam) in the Sistine Chapel, was prototyped by [Anish Athalye](https://www.anishathalye.com/), [Kevin Kwok](https://twitter.com/antimatter15), [Guillermo Webster](https://twitter.com/biject), and [Logan Engstrom](https://github.com/lengstrom) in about 16 hours. It was thus mordified by [Ashish Gupta](https://github.com/ashishgupta1350) to work from mac/linux to windows.
 
 ## Basic Principle
 
