@@ -27,3 +27,11 @@ Kevin, back in middle school, noticed this phenomenon and built [ShinyTouch](htt
 ## Running
 
 Run `python2 sistine.py`
+
+## License
+
+Copyright (c) 2016-2018 Anish Athalye, Kevin Kwok, Guillermo Webster, and Logan
+Engstrom. Released under the MIT License. See [LICENSE.md][license] for
+details.
+
+[license]: LICENSE.md
