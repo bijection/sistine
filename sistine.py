@@ -149,7 +149,11 @@ def findHoverPoint(
 # touch is true if it's a touch, otherwise it's false
 def find(segmented_image, debugframe=None, options={}):
     found_x, found_y, touch = None, None, None
-    _, cnts, _ = cv2.findContours(segmented_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if cv2.__version__.startswith('4'):
+        cnts, _ = cv2.findContours(segmented_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    else:
+        _, cnts, _ = cv2.findContours(segmented_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
     byarea = []
     for c in cnts:
         area = cv2.contourArea(c)
