@@ -222,14 +222,17 @@ def calibration(ind):
     x_calib, y_calib = pt
 
     def _calibration(segmented, debugframe, options, ticks, drawframe, calib, state):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
         if ticks > VERT_STAGE_SETUP_TIME:
+            cv2.putText(drawframe, 'Keep touching the dot', (10,50), font, 1, (255,255,255),2,cv2.LINE_AA)
             cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, RED, -1)
             x, y, touch = find(segmented, debugframe=drawframe, options=options)
             if touch is not None:
                 cv2.circle(drawframe, (x,y), CIRCLE_RADIUS, PURPLE, -1)
                 calib['calibrationPts'][ind].append((x,y))
-
         else:
+            cv2.putText(drawframe, 'Move your finger to the dot', (10,50), font, 1, (255,255,255),2,cv2.LINE_AA)
             cv2.circle(drawframe, (x_calib, y_calib), CALIB_CIRCLE_RADIUS, GREEN, -1)
         if ticks > VERT_STAGE_TIME:
             # cleanup
@@ -271,6 +274,14 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
             i_, j_ = applyTransform(i, j, np.linalg.inv(calib['hom']))
             cv2.circle(drawframe, (i, j), CIRCLE_RADIUS, RED, -1)
             cv2.line(drawframe, (i, j), (i_, j_), RED, LINE_WIDTH)
+    
+    shouldMouse = state['usemouse']
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    if shouldMouse:
+        cv2.putText(drawframe, 'Mouse on', (10,50), font, 1, (255,255,255),2,cv2.LINE_AA)
+    else:
+        cv2.putText(drawframe, 'Mouse off', (10,50), font, 1, (255,255,255),2,cv2.LINE_AA)
 
     if touch is not None:
         if not options['demo']:
@@ -281,7 +292,7 @@ def mainLoop(segmented, debugframe, options, ticks, drawframe, calib, state):
             y_ = int(y_ * MOVING_AVERAGE_WEIGHT + (1 - MOVING_AVERAGE_WEIGHT) * state['last_drawn'][1])
         state['last_drawn'] = (x_, y_)
         cv2.circle(drawframe, (x_, y_), FINGER_RADIUS, CYAN, -1)
-        shouldMouse = True #state['usemouse']
+        
         mx, my = opencv2system(x_,y_)
         if shouldMouse:
             simulate.mousemove(mx, my)
@@ -319,6 +330,33 @@ def applyTransform(x, y, homography):
     return int(round(x_)), int(round(y_))
 
 
+CALIBRATION_MESSAGE = """
+During the calibration process, you will be 
+shown a series of 9 dots on your screen.
+
+Touch the dot with your finger and hold your
+finger at that position until the next dot 
+appears.
+
+When the dot is green, it is not capturing
+your finger position. When the dot is green,
+it is recording information.
+
+Enable/disable mouse control with "k" key.
+
+When you are ready to begin, press space bar.
+"""
+
+def waitSetup(segmented, debugframe, options, ticks, drawframe, calib, state):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    cv2.putText(drawframe, 'Sistine Calibration', (10,50), font, 2, (255,255,255),2,cv2.LINE_AA)
+    for i, line in enumerate(CALIBRATION_MESSAGE.split('\n')):
+        cv2.putText(drawframe, line, (10,150 + i * 30), font, 1, (255,255,255),2,cv2.LINE_AA)
+
+    return True
+
+
 def main():
     cv2.ocl.setUseOpenCL(False) # some stuff dies if you don't do this
 
@@ -333,7 +371,7 @@ def main():
             calib = pickle.load(f)
         stages = [mainLoop]
     else:
-        stages = [calibration(i) for i in range(7)] + [mainLoop]
+        stages = [waitSetup] + [calibration(i) for i in range(7)] + [mainLoop]
 
     currStage = stages.pop(0)
 
@@ -364,7 +402,10 @@ def main():
         if key & 0xff == ord('q'):
             break
         elif key & 0xff == ord('k'):
-            state['usemouse'] = False
+            state['usemouse'] = not state['usemouse']
+        elif key & 0xff == ord(' ') and currStage == waitSetup:
+            currStage = stages.pop(0)
+            initialStageTicks = cv2.getTickCount()
 
         # frame by frame capture
         # I think there's a callback-based way to do this as well, but I think
